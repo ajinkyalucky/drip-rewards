@@ -137,32 +137,48 @@
   .track{position:absolute;left:40px;top:0;height:100%;display:flex;will-change:transform}
   .plate{flex:none;position:relative;width:358px;height:266px;margin-right:-24px}
   .plate img{display:block;width:100%;height:100%;pointer-events:none}
-  .plate span{
-    position:absolute;inset:0;display:grid;place-items:center;padding-top:10px;
-    font-size:26px;letter-spacing:.005em;color:#8a8a8a;
-    text-shadow:0 1px 0 rgba(255,255,255,.55),0 -1px 0 rgba(0,0,0,.3);
+  /* the card face is drawn by a WebGL shader (see "Card faces"); the image shows until it's ready */
+  .plate .face{position:absolute;inset:0;will-change:transform}
+  /* shadow under the metal; slides as the card leans */
+  .plate .shade{
+    position:absolute;left:29px;top:36px;width:300px;height:208px;border-radius:12px;
+    background:rgba(0,0,0,.55);filter:blur(14px);opacity:0;transition:opacity .4s;will-change:transform;
   }
-  .unlock{left:111px;top:365px;width:219px;font-size:16px;font-weight:600;letter-spacing:-.009em;line-height:24px;text-align:center;transition:opacity .15s}
-  .unlock.swap{opacity:0}
-  .rail{left:406px;top:445px;width:14px;height:369px;border-radius:60px;background:rgba(110,110,110,.3)}
-  .rail-hit{left:380px;top:436px;width:60px;height:386px;cursor:pointer}
-  .rail-preview{left:406px;width:14px;border-radius:60px;background:rgba(255,255,255,.1)}
-  .rail-fill{left:406px;width:14px;border-radius:60px;background:var(--green)}
-  .dot{left:409px;width:8px;height:8px;border-radius:50%;background:#d9d9d9}
-  .step{left:388px;font-family:"IBM Plex Mono",monospace;font-size:14px;letter-spacing:.015em;line-height:16px;color:#fff;opacity:.3}
-  .upgrades{left:351px;top:825px;font-family:"IBM Plex Mono",monospace;font-size:14px;letter-spacing:.015em;line-height:16px;text-transform:uppercase;opacity:.6}
+  .plate.live .shade{opacity:1}
+  .tilt-hint{
+    left:50%;top:360px;height:30px;padding:0 12px 0 10px;border-radius:99px;
+    display:flex;align-items:center;gap:7px;transform:translateX(-50%);
+    font:500 12px/1 "PP Mori",system-ui,sans-serif;letter-spacing:.01em;color:#f4f4f5;cursor:pointer;
+    transition:opacity .5s,transform .5s;
+  }
+  .tilt-hint.gone{opacity:0;transform:translateX(-50%) translateY(-6px);pointer-events:none}
+  .tilt-hint svg{animation:rock 2.4s ease-in-out infinite}
+  @keyframes rock{0%,100%{transform:rotate(-14deg)}50%{transform:rotate(14deg)}}
+  @media (prefers-reduced-motion: reduce){ .tilt-hint svg{animation:none} }
+  .plate canvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+  .plate.live img{visibility:hidden}
+  .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+  /* upgrade rail sits in the bottom bar beside the back button, level 01 on the left */
+  .rail{left:92px;top:900px;width:313px;height:14px;border-radius:60px;background:rgba(110,110,110,.3)}
+  .rail-hit{left:86px;top:870px;width:354px;height:70px;cursor:pointer}
+  .rail-preview{top:900px;height:14px;border-radius:60px;background:rgba(255,255,255,.1)}
+  .rail-fill{left:92px;top:900px;height:14px;border-radius:60px;background:var(--green)}
+  .dot{top:903px;width:8px;height:8px;border-radius:50%;background:#d9d9d9}
+  .step{top:877px;width:24px;text-align:center;font-family:"IBM Plex Mono",monospace;font-size:14px;letter-spacing:.015em;line-height:16px;color:#fff;opacity:.3}
+  .upgrades{left:96px;top:850px;font-family:"IBM Plex Mono",monospace;font-size:14px;letter-spacing:.015em;line-height:16px;text-transform:uppercase;opacity:.6}
   .glass{
     background:rgba(0,0,0,.3);
     border:1px solid rgba(255,255,255,.18);
     box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 4px 12px rgba(0,0,0,.35);
     backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);
   }
-  .pill-01{left:359px;top:0;width:74px;height:43px;border-radius:60px;display:flex;align-items:center;gap:10px;padding-left:13px;cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none;will-change:transform}
+  .pill-01{left:0;top:885.5px;width:74px;height:43px;border-radius:60px;display:flex;align-items:center;gap:10px;padding-left:13px;cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none;will-change:transform}
   .pill-01.dragging{cursor:grabbing;background:rgba(30,30,30,.55)}
   .pill-01:focus-visible{outline:2px solid #fff;outline-offset:2px}
+  .pill-01 svg{transform:rotate(90deg)}
   .pill-01 b{font-family:"IBM Plex Mono",monospace;font-weight:600;font-size:18px;letter-spacing:.015em}
+  .page-title{left:0;right:0;top:40px;text-align:center;font-family:"STK Bureau Serif",Georgia,serif;font-weight:400;font-size:26px;line-height:31px}
   .back{left:20px;top:878px;width:58px;height:58px;border-radius:60px;display:grid;place-items:center}
-  .ticker{left:88px;top:878px;width:332px;height:58px;border-radius:60px;display:flex;align-items:center;padding-left:37px;font-size:14px;letter-spacing:-.006em;color:#f6f6f6}
 
   /* ─── Screen 2: picker ───────────────────────────── */
   .eyebrow{left:0;right:0;top:300px;text-align:center;font-family:"JetBrains Mono",monospace;font-weight:500;font-size:18px;letter-spacing:.04em;line-height:24px;text-transform:uppercase;opacity:.5}
@@ -204,8 +220,13 @@
   <!-- Screen 1 — Upgrade 01 locked -->
   <div class="slot"><section class="phone" aria-label="Upgrade progress">
     <img class="abs bg" src="assets/reward-bg.jpg" alt="">
+    <h1 class="abs page-title">Rewards</h1>
     <div class="abs carousel" id="carousel" aria-roledescription="carousel" aria-label="Upgrade cards"><div class="track" id="track"></div></div>
-    <p class="abs unlock" id="unlock" aria-live="polite"></p>
+    <p class="sr" id="unlock" aria-live="polite"></p>
+    <button class="abs glass tilt-hint" id="tiltHint" type="button" hidden>
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><rect x="3.5" y="1" width="7" height="12" rx="1.6"/><path d="M6 11h2"/></svg>
+      <span id="tiltHintText">Tilt your phone</span>
+    </button>
 
     <!-- rewards for the upgrade in view; swapped as the rail / cards move -->
     <div class="abs rewards" id="rewards"></div>
@@ -215,7 +236,7 @@
     <div class="abs rail-fill" id="railFill"></div>
     <div id="steps"></div>
     <div class="abs rail-hit" id="railHit" aria-hidden="true"></div>
-    <div class="abs glass pill-01" id="handle" role="slider" tabindex="0" aria-label="Upgrade" aria-valuemin="1" aria-valuemax="7"><b id="handleNum">01</b>
+    <div class="abs glass pill-01" id="handle" role="slider" tabindex="0" aria-label="Upgrade" aria-orientation="horizontal" aria-valuemin="1" aria-valuemax="7"><b id="handleNum">01</b>
       <svg width="17" height="10" viewBox="0 0 17 10" aria-hidden="true"><defs><linearGradient id="lg" x1="0" x2="1"><stop offset="0" stop-color="#fff"/><stop offset="1" stop-color="#999"/></linearGradient></defs><path d="M0 1h17M0 5h17M0 9h17" stroke="url(#lg)" stroke-width="1.6"/></svg>
     </div>
     <span class="abs upgrades">Upgrades</span>
@@ -223,7 +244,6 @@
     <button class="abs glass back" aria-label="Back" style="color:#fff">
       <svg width="32" height="32" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M26 16H6M14 8l-8 8 8 8"/></svg>
     </button>
-    <div class="abs glass ticker">Shopping has never been so rewarding...</div>
   </section></div>
 
   <!-- Screen 2 — pick a reward -->
@@ -288,7 +308,8 @@
   const MILESTONES = [1500, 3000, 4500, 6000, 7500, 9000, 10000];
   const SPENT = 1000;
   // What each upgrade unlocks (from Figma: Rewards II → reward_claude), laid out
-  // loosely in the space left of the rail: [image, alt, left, top, size]
+  // loosely in the space left of a side rail: [image, alt, left, top, size].
+  // With the rail along the bottom, rewardBox() spreads them wider and a little shorter.
   const REWARDS = [
     [['socks', 'Nike socks', 190, 436, 160], ['coffee', 'Starbucks frappuccino', 22, 548, 160], ['rocher', 'Ferrero Rocher box', 168, 690, 160]],
     [['flowers', 'Bouquet of roses', 14, 440, 176], ['wallet', 'Green leather wallet', 180, 548, 176], ['protein', 'Supervoo protein wafer bites', 48, 684, 176]],
@@ -300,9 +321,14 @@
   ];
 
   const N = MILESTONES.length;
-  const STEP_Y = 51;            // rail distance between levels
+  const STEP_X = 43;            // rail distance between levels
   const SLIDE_X = 334;          // card width minus overlap
-  const yOf = l => 810 - STEP_Y * l;   // dot centre for level l (0 = start of rail)
+  const xOf = l => 96 + STEP_X * l;    // dot centre for level l (0 = start of rail)
+  const rewardBox = (x, y, size) => {
+    const sz = size * 0.92;
+    const cx = 220 + (x + size / 2 - 182) * 1.15;
+    return [cx - sz / 2, 384 + (y - 436) * 0.9, sz];
+  };
   const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
   const pad = l => String(l).padStart(2, '0');
   const rupees = n => '₹' + n.toLocaleString('en-IN');
@@ -350,13 +376,23 @@
     el.className = 'plate';
     el.setAttribute('role', 'group');
     el.setAttribute('aria-roledescription', 'slide');
-    el.innerHTML = `<img src="assets/card-blank.png" alt="" draggable="false"><span>Upgrade ${pad(i + 1)}</span>`;
+    const goal = MILESTONES[i];
+    const need = goal - SPENT;
+    el.setAttribute('aria-label', need > 0
+      ? `Upgrade ${pad(i + 1)}: shop for ${rupees(need)} more to unlock`
+      : `Upgrade ${pad(i + 1)}: unlocked`);
+    el.innerHTML = `<div class="shade"></div><div class="face"><img src="assets/card-blank.png" alt="" draggable="false"><canvas aria-hidden="true"></canvas></div>
+      <div class="sr" role="progressbar" aria-label="Spend towards upgrade ${pad(i + 1)}"
+           aria-valuemin="0" aria-valuemax="${goal}" aria-valuenow="${Math.min(SPENT, goal)}"
+           aria-valuetext="${rupees(Math.min(SPENT, goal))} of ${rupees(goal)}">
+      </div>`;
     track.appendChild(el);
     return el;
   });
 
   const rewards = $('rewards');
-  const rewardSets = REWARDS.map(set => set.map(([src, alt, x, y, size], j) => {
+  const rewardSets = REWARDS.map(set => set.map(([src, alt, x0, y0, size0], j) => {
+    const [x, y, size] = rewardBox(x0, y0, size0).map(v => Math.round(v));
     const el = document.createElement('div');
     el.className = 'rb';
     el.style.cssText = `left:${x}px;top:${y}px;width:${size}px;height:${size}px;` +
@@ -371,8 +407,8 @@
   const labels = [];
   let dots = '';
   for (let l = 0; l <= N; l++) {
-    dots += `<i class="abs dot" style="top:${yOf(l) - 4}px"></i>`;
-    if (l) labels[l] = `<span class="abs step" style="top:${yOf(l) - 4}px">${pad(l)}</span>`;
+    dots += `<i class="abs dot" style="left:${xOf(l) - 4}px"></i>`;
+    if (l) labels[l] = `<span class="abs step" style="left:${xOf(l) - 12}px">${pad(l)}</span>`;
   }
   $('steps').innerHTML = labels.join('') + dots;
   const labelEls = [...$('steps').querySelectorAll('.step')];
@@ -386,9 +422,8 @@
     }
     return N;
   })();
-  const fillTop = Math.min(yOf(progress) - 7, 803);
-  railFill.style.top = fillTop + 'px';
-  railFill.style.height = (814 - fillTop) + 'px';
+  const fillEnd = Math.max(xOf(progress) + 7, 103);
+  railFill.style.width = (fillEnd - 92) + 'px';
 
   let pos = 1, shown = 0, anim = 0;
 
@@ -400,11 +435,10 @@
       p.style.filter = `brightness(${1 - 0.45 * d})`;
     });
 
-    const y = yOf(pos);
-    handle.style.transform = `translateY(${y - 21.5}px)`;
-    const previewH = Math.max(0, fillTop + 7 - y);
-    railPreview.style.top = y + 'px';
-    railPreview.style.height = previewH + 'px';
+    const x = xOf(pos);
+    handle.style.transform = `translateX(${x - 37}px)`;
+    railPreview.style.left = (fillEnd - 7) + 'px';
+    railPreview.style.width = Math.max(0, x - fillEnd + 7) + 'px';
 
     labelEls.forEach((el, i) => {
       const base = SPENT >= MILESTONES[i] ? 0.7 : 0.3;
@@ -419,7 +453,10 @@
       handleNum.textContent = pad(level);
       handle.setAttribute('aria-valuenow', level);
       handle.setAttribute('aria-valuetext', `Upgrade ${pad(level)}`);
-      plates.forEach((p, i) => p.setAttribute('aria-hidden', i + 1 !== level));
+      plates.forEach((p, i) => {
+        p.setAttribute('aria-hidden', i + 1 !== level);
+        p.classList.toggle('on', i + 1 === level);
+      });
       rewardSets.forEach((set, i) => set.forEach(el => {
         el.classList.toggle('on', i + 1 === level);
         el.setAttribute('aria-hidden', i + 1 !== level);
@@ -428,9 +465,7 @@
       const copy = need > 0
         ? `Shop for ${rupees(need)} more to unlock upgrade ${pad(level)}`
         : `Upgrade ${pad(level)} unlocked`;
-      unlock.classList.add('swap');
-      clearTimeout(unlock._t);
-      unlock._t = setTimeout(() => { unlock.textContent = copy; unlock.classList.remove('swap'); }, 150);
+      unlock.textContent = copy;   // announced for screen readers; the card shows it
     }
   }
 
@@ -471,7 +506,6 @@
     });
   }
 
-  // Rail handle: drag up for higher upgrades
   // A firm bump when a drag runs into either end.
   function edge(st, raw) {
     const out = raw < 1 || raw > N;
@@ -479,9 +513,10 @@
     st.atEdge = out;
   }
 
+  // Rail handle: drag right for higher upgrades
   handle.addEventListener('pointerdown', () => haptic('light'));
   drag(handle,
-    (dx, dy, st) => { const raw = st.pos - dy / STEP_Y; edge(st, raw); pos = clamp(raw, 1, N); render(); },
+    (dx, dy, st) => { const raw = st.pos + dx / STEP_X; edge(st, raw); pos = clamp(raw, 1, N); render(); },
     () => goTo(pos));
 
   // Cards: swipe left for higher upgrades, with a little rubber-banding at the ends
@@ -500,7 +535,7 @@
   // Tap anywhere on the rail to jump to that upgrade
   $('railHit').addEventListener('click', e => {
     const r = phone.getBoundingClientRect();
-    goTo((810 - (e.clientY - r.top) / scale()) / STEP_Y);
+    goTo(((e.clientX - r.left) / scale() - xOf(0)) / STEP_X);
   });
 
   handle.addEventListener('keydown', e => {
@@ -517,6 +552,432 @@
   });
 
   render();
+
+  // ─── Card faces ─────────────────────────────────────
+  // Each card's copy is stamped into the brushed metal by a fragment shader: small
+  // text is pressed in with lit and shadowed walls, the amount is holographic foil
+  // that shifts with the light, and spend fills an engraved groove with liquid light.
+  // The light follows the phone's tilt (or the mouse), and idles gently otherwise.
+  // One offscreen WebGL canvas renders each visible card, copied into that card.
+  (() => {
+    const CARD = { x: 25, y: 29.5, w: 308, h: 217.5 };   // metal inside the 358×266 plate image
+    const GROOVE = { x: 20, y: 188, w: 268, h: 8 };      // spend track, card-local px
+    const LOCK = { x: 262, y: 22 };                        // padlock body, card-local px
+    const calm = matchMedia('(prefers-reduced-motion: reduce)');
+    const faces = plates.map((plate, i) => ({
+      i, plate,
+      face: plate.querySelector('.face'),
+      shade: plate.querySelector('.shade'),
+      canvas: plate.querySelector('canvas'),
+      goal: MILESTONES[i],
+      need: MILESTONES[i] - SPENT,
+      target: Math.min(1, SPENT / MILESTONES[i]),
+      t0: 0,
+    }));
+    faces.forEach(f => { f.ctx = f.canvas.getContext('2d'); });
+
+    // Card copy, drawn once per card. In the mask, red is stamped ink, green is foil
+    // and blue is the height of the raised chrome padlock.
+    function drawCopy(ctx, f, ink) {
+      const spacing = v => { if ('letterSpacing' in ctx) ctx.letterSpacing = v; };
+      ctx.save();
+      ctx.translate(CARD.x, CARD.y);
+      ctx.fillStyle = ctx.strokeStyle = ink;
+
+      ctx.font = '500 17px "JetBrains Mono", ui-monospace, monospace';
+      spacing('2.4px');
+      ctx.fillText(`UPGRADE ${pad(f.i + 1)}`, 20, 38);
+      spacing('0px');
+
+      // keyhole, stamped into the raised padlock (the debossed one keeps it in its height)
+      if (f.need <= 0) { keyhole(ctx); ctx.fill(); }
+
+      ctx.font = '600 11px "IBM Plex Mono", ui-monospace, monospace';
+      spacing('0.4px');
+      ctx.fillText(f.need <= 0 ? 'UNLOCKED' : `${rupees(SPENT)} / ${rupees(f.goal)}`, 20, 178);
+      ctx.textAlign = 'right';
+      ctx.fillText(`${Math.round(f.target * 100)}%`, 288, 178);
+      ctx.restore();
+    }
+
+    // padlock body + shackle, card-local px; the shackle lifts once unlocked
+    function drawLock(ctx, f, fill) {
+      const { x, y } = LOCK;
+      ctx.save();
+      ctx.translate(CARD.x, CARD.y);
+      ctx.fillStyle = ctx.strokeStyle = fill;
+      ctx.beginPath();
+      ctx.roundRect ? ctx.roundRect(x, y, 26, 20, 4.5) : ctx.rect(x, y, 26, 20);
+      ctx.fill();
+      ctx.lineWidth = 3.6;
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      if (f.need <= 0) { ctx.moveTo(x + 6, y + 1); ctx.lineTo(x + 6, y - 11); ctx.arc(x + 13, y - 11, 7, Math.PI, 0); ctx.lineTo(x + 20, y - 8); }
+      else { ctx.moveTo(x + 6, y + 1); ctx.lineTo(x + 6, y - 6); ctx.arc(x + 13, y - 6, 7, Math.PI, 0); ctx.lineTo(x + 20, y + 1); }
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    function mask(f) {
+      const c = document.createElement('canvas');
+      c.width = 716; c.height = 532;
+      const ctx = c.getContext('2d');
+      ctx.fillStyle = '#000';
+      ctx.fillRect(0, 0, c.width, c.height);
+      ctx.scale(2, 2);
+      ctx.globalCompositeOperation = 'lighter';
+      // softened so its edges read as a rounded bevel
+      ctx.filter = 'blur(1.4px)';
+      drawLock(ctx, f, '#00f');
+      ctx.filter = 'none';
+      drawCopy(ctx, f, '#f00');
+      return c;
+    }
+
+    // Without WebGL: the same copy, printed flat over the card image.
+    function flat() {
+      const k = Math.min(2, devicePixelRatio || 1);
+      faces.forEach(f => {
+        const { canvas: c, ctx } = f;
+        c.width = 358 * k; c.height = 266 * k;
+        ctx.scale(k, k);
+        const chrome = ctx.createLinearGradient(0, LOCK.y - 14, 0, LOCK.y + 20);
+        chrome.addColorStop(0, '#fafafa');
+        chrome.addColorStop(.45, '#8d8f94');
+        chrome.addColorStop(.55, '#3c3e43');
+        chrome.addColorStop(1, '#c9cbcf');
+        ctx.shadowColor = 'rgba(0,0,0,.35)';
+        ctx.shadowOffsetY = 1.5;
+        ctx.shadowBlur = 3;
+        drawLock(ctx, f, chrome);
+        ctx.shadowColor = 'transparent';
+        drawCopy(ctx, f, 'rgba(58,58,62,.8)');
+        const x = CARD.x + GROOVE.x, y = CARD.y + GROOVE.y;
+        ctx.fillStyle = 'rgba(0,0,0,.22)';
+        ctx.beginPath(); ctx.roundRect?.(x, y, GROOVE.w, GROOVE.h, 4); ctx.fill();
+        ctx.fillStyle = '#12a150';
+        ctx.beginPath(); ctx.roundRect?.(x, y, Math.max(GROOVE.h, GROOVE.w * f.target), GROOVE.h, 4); ctx.fill();
+      });
+    }
+
+    const VERT = `
+      attribute vec2 aPos;
+      varying vec2 vUv;
+      void main() {
+        vUv = vec2(aPos.x, 1.0 - aPos.y);
+        gl_Position = vec4(aPos * 2.0 - 1.0, 0.0, 1.0);
+      }`;
+
+    const FRAG = `
+      #ifdef GL_FRAGMENT_PRECISION_HIGH
+      precision highp float;
+      #else
+      precision mediump float;
+      #endif
+      uniform sampler2D uMetal, uMask;
+      uniform vec2 uTexel, uTilt;
+      uniform float uTime, uProg, uFlash;
+      varying vec2 vUv;
+
+      const vec2 PLATE = vec2(358.0, 266.0);
+      const vec2 CARD0 = vec2(${CARD.x.toFixed(1)}, ${CARD.y.toFixed(1)});
+      const vec2 CARDS = vec2(${CARD.w.toFixed(1)}, ${CARD.h.toFixed(1)});
+      const vec4 GROOVE = vec4(${GROOVE.x.toFixed(1)}, ${GROOVE.y.toFixed(1)}, ${GROOVE.w.toFixed(1)}, ${GROOVE.h.toFixed(1)});
+
+      float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+      float noise(vec2 p) {
+        vec2 i = floor(p), f = fract(p);
+        f = f * f * (3.0 - 2.0 * f);
+        return mix(mix(hash(i), hash(i + vec2(1.0, 0.0)), f.x),
+                   mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0, 1.0)), f.x), f.y);
+      }
+      float sdBox(vec2 p, vec2 b, float r) {
+        vec2 q = abs(p) - b + r;
+        return length(max(q, 0.0)) + min(max(q.x, q.y), 0.0) - r;
+      }
+      float ink(vec2 uv) { vec4 m = texture2D(uMask, uv); return max(m.r, m.g); }
+
+      void main() {
+        vec4 base = texture2D(uMetal, vUv);
+        float a = base.a;
+        if (a < 0.002) { gl_FragColor = vec4(0.0); return; }
+        vec3 metal = base.rgb / a;
+        vec2 p = vUv * PLATE - CARD0;              // card-local px
+        vec2 q = p / CARDS;                        // 0–1 across the card
+        float t = uTime;
+
+        vec4 m = texture2D(uMask, vUv);
+        float stamp = m.r, foil = m.g;
+
+        // light comes from the top left and swings with the tilt
+        vec2 L = vec2(-0.45 + uTilt.x * 0.9, -0.75 + uTilt.y * 0.9);
+        vec2 dx = vec2(uTexel.x * 1.25, 0.0), dy = vec2(0.0, uTexel.y * 1.25);
+        vec2 grad = vec2(ink(vUv + dx) - ink(vUv - dx), ink(vUv + dy) - ink(vUv - dy));
+        float wall = dot(grad, L) * 1.1;           // pressed-in walls: lit or shadowed
+
+        // brushed grain and an anisotropic streak that rides the tilt
+        float grain = noise(vec2(p.x * 0.015, p.y * 1.7)) * 0.6 + noise(vec2(p.x * 0.04, p.y * 4.0)) * 0.4;
+        float along = q.x * 0.85 + q.y * 0.35;
+        float lightPos = 0.55 + uTilt.x * 0.55 + uTilt.y * 0.25;
+        float streak = exp(-pow((along - lightPos) / 0.11, 2.0)) * (0.55 + 0.45 * grain);
+        float sweep = uFlash < 1.0 ? exp(-pow((along - mix(-0.3, 1.5, uFlash)) / 0.06, 2.0)) : 0.0;
+
+        vec3 col = metal + (streak * 0.2 + sweep * 0.45) * vec3(1.0, 0.99, 0.97);
+
+        // raised chrome padlock: bevel from the blurred height, mirror bands that slide
+        // with the tilt, a tight highlight and a soft shadow on the plate
+        float h = m.b;
+        float lockIn = smoothstep(0.28, 0.5, h);
+        vec2 d2 = uTexel * 2.0;
+        vec2 gh = vec2(texture2D(uMask, vUv + vec2(d2.x, 0.0)).b - texture2D(uMask, vUv - vec2(d2.x, 0.0)).b,
+                       texture2D(uMask, vUv + vec2(0.0, d2.y)).b - texture2D(uMask, vUv - vec2(0.0, d2.y)).b);
+        vec3 n = normalize(vec3(-gh * 3.2, 1.0));
+        vec3 Ld = normalize(vec3(L, 1.1));
+        float env = n.y * 1.6 + n.x * 0.5 + (p.y - 12.0) / 30.0 - uTilt.y * 0.7 - uTilt.x * 0.35;
+        float band = 0.5 + 0.5 * cos(env * 4.2);
+        vec3 chrome = mix(vec3(0.13, 0.14, 0.16), vec3(0.97, 0.975, 0.985), smoothstep(0.15, 0.85, band));
+        chrome *= 0.6 + 0.4 * max(dot(n, Ld), 0.0);
+        chrome += pow(max(dot(n, normalize(Ld + vec3(0.0, 0.0, 1.0))), 0.0), 48.0) * 0.9;
+        chrome += streak * 0.35 + sweep * 0.6;
+        float shade = texture2D(uMask, vUv + L * uTexel * 5.0).b;
+        col *= 1.0 - 0.3 * smoothstep(0.1, 0.6, shade) * (1.0 - lockIn);
+        col = mix(col, chrome, lockIn);
+
+        // stamped copy
+        col = mix(col, col * 0.6, stamp * 0.9);
+        col += wall * (1.0 - foil * 0.4);
+
+        // holographic polish: diffraction rainbow over a fine diamond lattice,
+        // brightest where the glare sits; both slide as the card tilts
+        vec2 gp = (q - 0.5 - uTilt * vec2(0.42, 0.36)) * vec2(1.0, 0.72);
+        float glare = exp(-dot(gp, gp) * 6.0);
+        float hue = along * 1.7 - dot(uTilt, vec2(1.15, 0.75)) + length(gp) * 1.1 + grain * 0.06;
+        vec3 rainbow = 0.5 + 0.5 * cos(6.28318 * (hue + vec3(0.0, 0.33, 0.67)));
+        vec2 lp = mat2(0.7071, 0.7071, -0.7071, 0.7071) * p / 10.0;
+        vec2 lf = abs(fract(lp) - 0.5);
+        float line = 1.0 - smoothstep(0.0, 0.05, 0.5 - max(lf.x, lf.y));
+        float gem = (1.0 - smoothstep(0.05, 0.14, lf.x + lf.y)) * step(0.55, hash(floor(lp)));
+        float pattern = 0.5 + 0.35 * line + 0.6 * gem;
+        float holo = (0.14 + 0.5 * glare + 0.22 * streak) * pattern * (1.0 - stamp * 0.75);
+        col = mix(col, col * (0.62 + rainbow * 0.7), holo);
+        col += rainbow * holo * 0.2 + glare * 0.1;
+
+        // holographic foil for the amount
+        float phase = along * 1.6 + dot(uTilt, vec2(1.3, -0.9)) + grad.x * 2.0 + t * 0.04;
+        vec3 irid = 0.5 + 0.5 * cos(6.28318 * (phase + vec3(0.0, 0.33, 0.67)));
+        irid = mix(vec3(0.9, 0.92, 0.95), irid, 0.48);
+        float lum = dot(metal, vec3(0.333));
+        vec3 foilCol = irid * (0.42 + 0.75 * lum) + streak * 0.55 + sweep * 0.9;
+        float r = hash(floor(p * 0.9));
+        float twinkle = pow(max(0.0, sin(t * 2.0 + r * 40.0 + (uTilt.x - uTilt.y) * 6.0)), 12.0);
+        foilCol += step(0.965, r) * twinkle * 0.7;
+        foilCol += max(wall, 0.0) * 1.5;
+        col = mix(col, foilCol, foil);
+
+        // engraved spend groove
+        vec2 gc = GROOVE.xy + GROOVE.zw * 0.5;
+        float d = sdBox(p - gc, GROOVE.zw * 0.5, GROOVE.w * 0.5);
+        float inG = 1.0 - smoothstep(-0.5, 0.5, d);
+        float depth = clamp((p.y - GROOVE.y) / GROOVE.w, 0.0, 1.0);
+        col = mix(col, col * mix(0.36, 0.62, depth), inG);
+        float rim = 1.0 - smoothstep(0.0, 1.2, abs(d));
+        col += rim * (step(gc.y, p.y) * 0.35 - step(p.y, gc.y) * 0.12);
+
+        // liquid light filling it
+        float live = step(0.001, uProg);
+        float head = GROOVE.x + GROOVE.z * uProg + sin(p.y * 1.3 + t * 7.0) * 0.8;
+        float inF = (1.0 - smoothstep(-1.6, -0.6, d)) * (1.0 - smoothstep(-0.5, 0.5, p.x - head)) * live;
+        float u = clamp((p.x - GROOVE.x) / max(1.0, head - GROOVE.x), 0.0, 1.0);
+        vec3 green = mix(vec3(0.0, 0.42, 0.18), vec3(0.2, 0.86, 0.46), u);
+        green += 0.1 * sin((p.x - t * 70.0) * 0.12);
+        green += exp(-pow((p.x - head) / 4.0, 2.0)) * vec3(0.7, 1.0, 0.8);
+        green += (1.0 - depth) * 0.22;
+        col = mix(col, green, inF);
+        float glow = exp(-length((p - vec2(head, gc.y)) * vec2(0.08, 0.16))) * live;
+        col += vec3(0.2, 0.75, 0.4) * glow * 0.45 * (1.0 - inF);
+
+        gl_FragColor = vec4(clamp(col, 0.0, 1.0) * a, a);
+      }`;
+
+    function setupGL(metalImg) {
+      const glc = document.createElement('canvas');
+      const gl = glc.getContext('webgl', { premultipliedAlpha: true, antialias: false });
+      if (!gl) return null;
+      const shader = (type, src) => {
+        const sh = gl.createShader(type);
+        gl.shaderSource(sh, src);
+        gl.compileShader(sh);
+        if (!gl.getShaderParameter(sh, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(sh));
+        return sh;
+      };
+      const prog = gl.createProgram();
+      gl.attachShader(prog, shader(gl.VERTEX_SHADER, VERT));
+      gl.attachShader(prog, shader(gl.FRAGMENT_SHADER, FRAG));
+      gl.linkProgram(prog);
+      if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(prog));
+      gl.useProgram(prog);
+
+      const buf = gl.createBuffer();
+      gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+      gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([0, 0, 1, 0, 0, 1, 0, 1, 1, 0, 1, 1]), gl.STATIC_DRAW);
+      const loc = gl.getAttribLocation(prog, 'aPos');
+      gl.enableVertexAttribArray(loc);
+      gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
+
+      gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
+      const texture = src => {
+        const tx = gl.createTexture();
+        gl.bindTexture(gl.TEXTURE_2D, tx);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, src);
+        return tx;
+      };
+      gl.activeTexture(gl.TEXTURE0);
+      texture(metalImg);                     // throws on file:// (tainted image) → flat fallback
+      gl.activeTexture(gl.TEXTURE1);
+      faces.forEach(f => { f.tex = texture(mask(f)); });
+
+      const u = name => gl.getUniformLocation(prog, name);
+      const U = { time: u('uTime'), tilt: u('uTilt'), prog: u('uProg'), flash: u('uFlash') };
+      gl.uniform1i(u('uMetal'), 0);
+      gl.uniform1i(u('uMask'), 1);
+      gl.uniform2f(u('uTexel'), 1 / 716, 1 / 532);
+      return { gl, glc, U };
+    }
+
+    // ── light / tilt ──
+    // `want` is where the input says the card should face (−1…1 each way); the card
+    // follows it on a spring so it has a little weight and overshoot.
+    const want = { x: 0, y: 0 }, tilt = { x: 0, y: 0, vx: 0, vy: 0 };
+    let lastInput = -1e9, base = null, gyro = false;
+    const hint = $('tiltHint'), hintText = $('tiltHintText');
+    const touch = matchMedia('(pointer: coarse)').matches;
+
+    phone.addEventListener('pointermove', e => {
+      if (e.pointerType !== 'mouse' || carousel.classList.contains('dragging')) return;
+      const r = carousel.getBoundingClientRect();
+      want.x = clamp(((e.clientX - r.left) / r.width - 0.5) * 2.2, -1, 1);
+      want.y = clamp(((e.clientY - r.top) / r.height - 0.5) * 2.2, -1, 1);
+      lastInput = performance.now();
+    });
+
+    function onOrient(e) {
+      if (e.gamma == null || e.beta == null) return;
+      // left/right lean → x, towards/away → y; swap when the phone is on its side
+      const turned = Math.abs(screen.orientation?.angle ?? window.orientation ?? 0) === 90;
+      const gx = turned ? e.beta : e.gamma, gy = turned ? -e.gamma : e.beta;
+      base ??= { x: gx, y: gy };
+      base.x += (gx - base.x) * 0.004;       // drift back to however the phone is being held
+      base.y += (gy - base.y) * 0.004;
+      want.x = clamp((gx - base.x) / 18, -1, 1);
+      want.y = clamp((gy - base.y) / 18, -1, 1);
+      lastInput = performance.now();
+      if (!gyro) { gyro = true; hintText.textContent = 'Tilt your phone'; }
+      if (Math.hypot(want.x, want.y) > 0.35 && !hint.classList.contains('gone')) {
+        setTimeout(() => hint.classList.add('gone'), 1200);
+      }
+    }
+
+    const DOE = window.DeviceOrientationEvent;
+    if (DOE && touch) {
+      hint.hidden = false;
+      addEventListener('deviceorientation', onOrient);
+      // No readings yet: either the browser wants permission from a tap (iOS),
+      // or there's no gyro at all.
+      setTimeout(() => {
+        if (gyro) return;
+        if (typeof DOE.requestPermission !== 'function') { hint.classList.add('gone'); return; }
+        hintText.textContent = 'Tap to tilt the card';
+        phone.addEventListener('click', () => {
+          DOE.requestPermission()
+            .then(r => { if (r !== 'granted') hint.classList.add('gone'); })
+            .catch(() => hint.classList.add('gone'));
+        }, { once: true });
+      }, 800);
+      hint.addEventListener('click', () => haptic('light'));
+    }
+
+    function start(ctx) {
+      const { gl, glc, U } = ctx;
+      let visible = true, level = 0, last = performance.now();
+      new IntersectionObserver(([e]) => { visible = e.isIntersecting; }).observe(phone);
+      faces.forEach(f => f.plate.classList.add('live'));
+
+      const frame = now => {
+        requestAnimationFrame(frame);
+        if (!visible || document.hidden) return;
+        const still = calm.matches;
+        const t = still ? 0 : now / 1000;
+
+        if (now - lastInput > 2500) {
+          want.x = still ? 0 : Math.sin(t * 0.6) * 0.45;
+          want.y = still ? 0 : Math.sin(t * 0.43 + 1) * 0.3;
+        }
+        const dt = Math.min(0.05, (now - last) / 1000);
+        last = now;
+        for (const [p, v] of [['x', 'vx'], ['y', 'vy']]) {
+          tilt[v] += (70 * (want[p] - tilt[p]) - 11 * tilt[v]) * dt;
+          tilt[p] = clamp(tilt[p] + tilt[v] * dt, -1.25, 1.25);
+        }
+
+        const k = Math.min(2, (devicePixelRatio || 1) * scale());
+        const W = Math.round(358 * k), H = Math.round(266 * k);
+        if (glc.width !== W || glc.height !== H) {
+          glc.width = W; glc.height = H;
+          gl.viewport(0, 0, W, H);
+        }
+        gl.uniform1f(U.time, t);
+        gl.uniform2f(U.tilt, tilt.x, tilt.y);
+
+        const now_level = Math.round(pos);
+        if (now_level !== level) {
+          faces[level - 1]?.face.style.removeProperty('transform');
+          faces[level - 1]?.shade.style.removeProperty('transform');
+          level = now_level;
+          faces[level - 1].t0 = now;
+        }
+
+        faces.forEach(f => {
+          if (Math.abs(f.i + 1 - pos) > 1.2) return;
+          const on = f.i + 1 === level && !still;
+          const e = on ? clamp((now - f.t0 - 180) / 1300, 0, 1) : 1;
+          gl.uniform1f(U.prog, f.target * (1 - Math.pow(1 - e, 4)));
+          gl.uniform1f(U.flash, on ? clamp((now - f.t0) / 1000, 0, 1) : 1);
+          gl.bindTexture(gl.TEXTURE_2D, f.tex);
+          gl.drawArrays(gl.TRIANGLES, 0, 6);
+          if (f.canvas.width !== W || f.canvas.height !== H) { f.canvas.width = W; f.canvas.height = H; }
+          f.ctx.clearRect(0, 0, W, H);
+          f.ctx.drawImage(glc, 0, 0);
+        });
+
+        // the card in view leans towards the tilt; its shadow slides the other way
+        if (!still) {
+          const f = faces[level - 1];
+          f.face.style.transform =
+            `perspective(800px) rotateY(${(tilt.x * 13).toFixed(2)}deg) rotateX(${(-tilt.y * 11).toFixed(2)}deg) translateZ(${(Math.hypot(tilt.x, tilt.y) * 10).toFixed(1)}px)`;
+          f.shade.style.transform =
+            `translate(${(-tilt.x * 10).toFixed(1)}px, ${(10 + tilt.y * 7).toFixed(1)}px) scale(${(0.96 + Math.hypot(tilt.x, tilt.y) * 0.03).toFixed(3)})`;
+        }
+      };
+      requestAnimationFrame(frame);
+    }
+
+    const metal = plates[0].querySelector('img');
+    const fontsReady = Promise.race([
+      Promise.all([
+        '600 58px "PP Mori"', '400 15px "PP Mori"', '500 11px "JetBrains Mono"', '600 11px "IBM Plex Mono"',
+      ].map(f => document.fonts.load(f))),
+      new Promise(r => setTimeout(r, 2500)),
+    ]).catch(() => {});
+    Promise.all([fontsReady, metal.decode().catch(() => {})]).then(() => {
+      let ctx = null;
+      try { ctx = setupGL(metal); } catch (err) { console.warn('Card faces: using flat fallback', err); }
+      ctx ? start(ctx) : flat();
+    });
+  })();
 
   // ─── Bubble pop (screen 2) ──────────────────────────
   // Tapping a bubble ruptures its film from the touch point: the rim races round
