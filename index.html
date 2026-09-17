@@ -1,0 +1,761 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Drip Rewards</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  @font-face{font-family:"PP Mori";src:url(fonts/PPMori-Regular.otf) format("opentype");font-weight:400;font-display:swap}
+  @font-face{font-family:"PP Mori";src:url(fonts/PPMori-Semibold.otf) format("opentype");font-weight:600;font-display:swap}
+  @font-face{font-family:"PP Mori";src:url(fonts/PPMori-Bold.otf) format("opentype");font-weight:700;font-display:swap}
+  @font-face{font-family:"JetBrains Mono";src:url(fonts/JetBrainsMono-Medium.ttf) format("truetype");font-weight:500;font-display:swap}
+  @font-face{font-family:"STK Bureau Serif";src:url(fonts/STKBureauSerif-Book-Trial.otf) format("opentype");font-weight:400;font-display:swap}
+
+  :root{
+    --canvas:#1e1e1e;
+    --muted:#a1a1aa;
+    --soft:#e4e4e7;
+    --green:#008539;
+    --amber:#ffb94c;
+    --s:1;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    background:var(--canvas);
+    font-family:"PP Mori",system-ui,sans-serif;
+    color:#fff;
+    -webkit-font-smoothing:antialiased;
+    overflow-x:hidden;
+  }
+  .stage{
+    min-height:100%;
+    display:flex;flex-wrap:wrap;justify-content:center;align-items:center;
+    gap:calc(64px * var(--s));
+    padding:32px 16px;
+  }
+  /* each phone is laid out at 440x956 and scaled to fit */
+  .slot{width:calc(440px * var(--s));height:calc(956px * var(--s));flex:none}
+  .phone{
+    position:relative;width:440px;height:956px;overflow:hidden;background:#000;
+    transform:scale(var(--s));transform-origin:0 0;
+  }
+  .abs{position:absolute}
+  .bg{inset:0;width:100%;height:100%;object-fit:cover}
+
+  /* ─── Floating bubbles ─────────────────────────── */
+  /* blend on the untransformed wrapper so it reaches the background */
+  .bubble{position:absolute;mix-blend-mode:screen}
+  .bubble .float{
+    display:block;width:100%;height:100%;
+    animation:float var(--dur,6s) ease-in-out var(--delay,0s) infinite;
+    will-change:transform;
+  }
+  .bubble img{display:block;width:100%;height:100%}
+  .bubble .shadow{
+    position:absolute;left:22%;right:22%;bottom:-10px;height:12px;border-radius:50%;
+    background:radial-gradient(closest-side,rgba(255,255,255,.10),transparent);
+    filter:blur(3px);
+    animation:shadow var(--dur,6s) ease-in-out var(--delay,0s) infinite;
+  }
+  @keyframes float{
+    0%,100%{transform:translate(0,0) rotate(0deg)}
+    25%{transform:translate(calc(var(--dx,3px)), calc(var(--amp,10px) * -.55)) rotate(var(--rot,1.5deg))}
+    50%{transform:translate(0, calc(var(--amp,10px) * -1)) rotate(0deg)}
+    75%{transform:translate(calc(var(--dx,3px) * -1), calc(var(--amp,10px) * -.45)) rotate(calc(var(--rot,1.5deg) * -1))}
+  }
+  @keyframes shadow{
+    0%,100%{transform:scale(1);opacity:1}
+    50%{transform:scale(.78);opacity:.45}
+  }
+  @media (prefers-reduced-motion: reduce){
+    .bubble .float,.bubble .shadow{animation:none}
+  }
+
+  /* screen 1 rewards: one layer blended as a whole, bubbles pop in per upgrade */
+  .rewards{left:0;top:0;width:440px;height:956px;mix-blend-mode:screen;pointer-events:none}
+  .rb{
+    position:absolute;opacity:0;transform:translateY(24px) scale(.55);
+    transition:opacity .18s ease,transform .22s ease-in;
+  }
+  .rb.on{
+    opacity:1;transform:none;
+    transition:opacity .35s ease var(--in),transform .7s cubic-bezier(.3,1.45,.5,1) var(--in);
+  }
+  /* drifts sideways with the rail while dragging, deeper bubbles move more */
+  .rb .drift{display:block;width:100%;height:100%;transform:translateX(calc(var(--px,0px) * var(--depth)))}
+  .rb .float{display:block;width:100%;height:100%;animation:float var(--dur) ease-in-out var(--delay) infinite}
+  .rb img{display:block;width:100%;height:100%}
+  @media (prefers-reduced-motion: reduce){
+    .rb,.rb.on{transition:opacity .2s}
+    .rb .float{animation:none}
+  }
+
+  /* ─── Poppable bubbles (screen 2) ─────────────── */
+  /* --mr is the mask radius: past the ring the whole bubble shows, at --rin only the product does */
+  @property --mr{syntax:"<length>";inherits:false;initial-value:400px}
+  .pick{cursor:pointer;-webkit-tap-highlight-color:transparent;transition:opacity .45s ease,filter .45s ease}
+  .pick:focus-visible{outline:none}
+  .pick:focus-visible .float{outline:2px solid rgba(255,255,255,.7);outline-offset:-10px;border-radius:50%}
+  .pick img{
+    --mr:var(--rout);
+    -webkit-mask:radial-gradient(circle at var(--mx) var(--my),#000 calc(var(--mr) - 7px),transparent calc(var(--mr) + 1px));
+    mask:radial-gradient(circle at var(--mx) var(--my),#000 calc(var(--mr) - 7px),transparent calc(var(--mr) + 1px));
+    transform-origin:var(--mx) var(--my);
+    transition:--mr .6s cubic-bezier(.25,.8,.3,1),transform .22s cubic-bezier(.3,.7,.4,1.6);
+  }
+  .pick.press img{transform:scale(.94,.92);transition:transform .12s ease-out}
+  .pick.popped img{--mr:var(--rin);filter:contrast(1.25);transition:transform .22s,filter .3s;animation:settle .8s cubic-bezier(.3,.7,.4,1) both}
+  .pick.reform img{animation:reform .7s cubic-bezier(.3,.7,.4,1) both}
+  .has-pick .pick:not(.popped){opacity:.4;filter:saturate(.5)}
+  .has-pick .label{transition:opacity .45s,color .45s;opacity:.4}
+  .has-pick .label.on{opacity:1;color:#fff}
+  @keyframes settle{
+    0%{transform:scale(1.05)}
+    25%{transform:translateY(-4px) scale(1.07)}
+    55%{transform:translateY(5px) scale(.98)}
+    80%{transform:translateY(-1px) scale(1.01)}
+    100%{transform:none}
+  }
+  @keyframes reform{
+    0%{transform:scale(.86)}
+    45%{transform:scale(1.05,1.02)}
+    70%{transform:scale(.98,1.01)}
+    100%{transform:none}
+  }
+  .fx{position:absolute;inset:0;width:440px;height:956px;pointer-events:none;mix-blend-mode:screen}
+
+  .label{font-size:14px;letter-spacing:-.006em;color:var(--muted);text-align:center;white-space:nowrap;line-height:20px}
+
+  /* ─── Screen 1: upgrade progress ─────────────────── */
+  /* card carousel — one plate per upgrade, swipeable and synced with the rail */
+  .carousel{left:0;top:88px;width:440px;height:266px;overflow:hidden;touch-action:pan-y;cursor:grab;user-select:none;-webkit-user-select:none}
+  .carousel.dragging{cursor:grabbing}
+  .track{position:absolute;left:40px;top:0;height:100%;display:flex;will-change:transform}
+  .plate{flex:none;position:relative;width:358px;height:266px;margin-right:-24px}
+  .plate img{display:block;width:100%;height:100%;pointer-events:none}
+  .plate span{
+    position:absolute;inset:0;display:grid;place-items:center;padding-top:10px;
+    font-size:26px;letter-spacing:.005em;color:#8a8a8a;
+    text-shadow:0 1px 0 rgba(255,255,255,.55),0 -1px 0 rgba(0,0,0,.3);
+  }
+  .unlock{left:111px;top:365px;width:219px;font-size:16px;font-weight:600;letter-spacing:-.009em;line-height:24px;text-align:center;transition:opacity .15s}
+  .unlock.swap{opacity:0}
+  .rail{left:406px;top:445px;width:14px;height:369px;border-radius:60px;background:rgba(110,110,110,.3)}
+  .rail-hit{left:380px;top:436px;width:60px;height:386px;cursor:pointer}
+  .rail-preview{left:406px;width:14px;border-radius:60px;background:rgba(255,255,255,.1)}
+  .rail-fill{left:406px;width:14px;border-radius:60px;background:var(--green)}
+  .dot{left:409px;width:8px;height:8px;border-radius:50%;background:#d9d9d9}
+  .step{left:388px;font-family:"IBM Plex Mono",monospace;font-size:14px;letter-spacing:.015em;line-height:16px;color:#fff;opacity:.3}
+  .upgrades{left:351px;top:825px;font-family:"IBM Plex Mono",monospace;font-size:14px;letter-spacing:.015em;line-height:16px;text-transform:uppercase;opacity:.6}
+  .glass{
+    background:rgba(0,0,0,.3);
+    border:1px solid rgba(255,255,255,.18);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 4px 12px rgba(0,0,0,.35);
+    backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);
+  }
+  .pill-01{left:359px;top:0;width:74px;height:43px;border-radius:60px;display:flex;align-items:center;gap:10px;padding-left:13px;cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none;will-change:transform}
+  .pill-01.dragging{cursor:grabbing;background:rgba(30,30,30,.55)}
+  .pill-01:focus-visible{outline:2px solid #fff;outline-offset:2px}
+  .pill-01 b{font-family:"IBM Plex Mono",monospace;font-weight:600;font-size:18px;letter-spacing:.015em}
+  .back{left:20px;top:878px;width:58px;height:58px;border-radius:60px;display:grid;place-items:center}
+  .ticker{left:88px;top:878px;width:332px;height:58px;border-radius:60px;display:flex;align-items:center;padding-left:37px;font-size:14px;letter-spacing:-.006em;color:#f6f6f6}
+
+  /* ─── Screen 2: picker ───────────────────────────── */
+  .eyebrow{left:0;right:0;top:300px;text-align:center;font-family:"JetBrains Mono",monospace;font-weight:500;font-size:18px;letter-spacing:.04em;line-height:24px;text-transform:uppercase;opacity:.5}
+  .headline{left:0;right:0;top:343px;text-align:center;font-family:"STK Bureau Serif",Georgia,serif;font-size:26px;line-height:31px}
+
+  /* ─── Screen 3: claim ────────────────────────────── */
+  .close{left:397px;top:342px;opacity:.2}
+  .title{left:40px;right:40px;top:555px;text-align:center;font-size:24px;font-weight:700;letter-spacing:-.01em;line-height:32px}
+  .sub{left:73px;width:295px;top:599px;text-align:center;font-size:16px;letter-spacing:-.009em;line-height:24px;opacity:.5}
+  .warn{left:20px;top:687px;width:400px;height:86px;border-radius:8px;background:rgba(255,185,76,.3);padding:12px 10px 0 44px;color:var(--soft)}
+  .warn svg{position:absolute;left:10px;top:12px}
+  .warn h4{font-size:12px;font-weight:600;line-height:16px}
+  .warn p{margin-top:6px;font-size:14px;letter-spacing:-.006em;line-height:20px}
+  .check{left:20px;top:793px;display:flex;gap:6px;align-items:flex-start;cursor:pointer;color:var(--soft);font-size:14px;letter-spacing:-.006em;line-height:20px;width:390px}
+  .check input{appearance:none;-webkit-appearance:none;flex:none;width:18px;height:18px;margin:3px;border:1.5px solid var(--soft);border-radius:3px;display:grid;place-items:center;cursor:pointer}
+  .check input:checked{background:#fff;border-color:#fff}
+  .check input:checked::after{content:"";width:5px;height:9px;border:solid #000;border-width:0 2px 2px 0;transform:translateY(-1px) rotate(45deg)}
+  .check input:focus-visible{outline:2px solid #fff;outline-offset:2px}
+  .cta{
+    left:10px;top:864px;width:420px;height:56px;border-radius:9999px;border:0;
+    background:linear-gradient(rgba(255,255,255,.16),rgba(255,255,255,.16)),#09090b;
+    color:#fff;font:600 16px/1 "PP Mori",sans-serif;letter-spacing:-.004em;cursor:pointer;
+    transition:opacity .2s;
+  }
+  .cta:disabled{opacity:.5;cursor:not-allowed;pointer-events:none}
+  .check.nudge{animation:nudge .42s cubic-bezier(.36,.07,.19,.97)}
+  @keyframes nudge{
+    15%,85%{transform:translateX(-2px)}
+    30%,70%{transform:translateX(5px)}
+    45%{transform:translateX(-6px)}
+    60%{transform:translateX(6px)}
+  }
+  @media (prefers-reduced-motion: reduce){ .check.nudge{animation:none} }
+</style>
+</head>
+<body>
+<main class="stage">
+
+  <!-- Screen 1 — Upgrade 01 locked -->
+  <div class="slot"><section class="phone" aria-label="Upgrade progress">
+    <img class="abs bg" src="assets/reward-bg.jpg" alt="">
+    <div class="abs carousel" id="carousel" aria-roledescription="carousel" aria-label="Upgrade cards"><div class="track" id="track"></div></div>
+    <p class="abs unlock" id="unlock" aria-live="polite"></p>
+
+    <!-- rewards for the upgrade in view; swapped as the rail / cards move -->
+    <div class="abs rewards" id="rewards"></div>
+
+    <div class="abs rail"></div>
+    <div class="abs rail-preview" id="railPreview"></div>
+    <div class="abs rail-fill" id="railFill"></div>
+    <div id="steps"></div>
+    <div class="abs rail-hit" id="railHit" aria-hidden="true"></div>
+    <div class="abs glass pill-01" id="handle" role="slider" tabindex="0" aria-label="Upgrade" aria-valuemin="1" aria-valuemax="7"><b id="handleNum">01</b>
+      <svg width="17" height="10" viewBox="0 0 17 10" aria-hidden="true"><defs><linearGradient id="lg" x1="0" x2="1"><stop offset="0" stop-color="#fff"/><stop offset="1" stop-color="#999"/></linearGradient></defs><path d="M0 1h17M0 5h17M0 9h17" stroke="url(#lg)" stroke-width="1.6"/></svg>
+    </div>
+    <span class="abs upgrades">Upgrades</span>
+
+    <button class="abs glass back" aria-label="Back" style="color:#fff">
+      <svg width="32" height="32" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M26 16H6M14 8l-8 8 8 8"/></svg>
+    </button>
+    <div class="abs glass ticker">Shopping has never been so rewarding...</div>
+  </section></div>
+
+  <!-- Screen 2 — pick a reward -->
+  <div class="slot"><section class="phone" aria-label="Pick a reward">
+    <img class="abs bg" src="assets/post-bg.jpg" alt="">
+    <p class="abs eyebrow">Upgrade 01 Unlocked</p>
+    <h1 class="abs headline" style="font-weight:400">Pick the one you love!</h1>
+
+    <!-- ring geometry (--mx/--my centre, --r radius) measured from each image at display size -->
+    <div class="bubble pick" role="button" tabindex="0" aria-pressed="false" aria-describedby="lbl-coffee" style="left:40px;top:489px;width:151px;height:141px;--mx:73px;--my:69.5px;--r:60px;--dur:6.4s;--delay:-2.1s;--amp:11px;--dx:3px;--rot:1.5deg">
+      <span class="shadow"></span><span class="float"><img src="assets/coffee.png" alt="Starbucks frappuccino"></span>
+    </div>
+    <div class="bubble pick" role="button" tabindex="0" aria-pressed="false" aria-describedby="lbl-socks" style="left:208px;top:438px;width:174px;height:177px;--mx:86px;--my:86px;--r:70px;--dur:7.2s;--delay:-.8s;--amp:13px;--dx:-4px;--rot:-1.3deg">
+      <span class="shadow"></span><span class="float"><img src="assets/socks.png" alt="Nike socks"></span>
+    </div>
+    <div class="bubble pick" role="button" tabindex="0" aria-pressed="false" aria-describedby="lbl-rocher" style="left:125px;top:660px;width:164px;height:150px;--mx:84px;--my:78px;--r:66px;--dur:5.8s;--delay:-4s;--amp:9px;--dx:2px;--rot:1.1deg">
+      <span class="shadow"></span><span class="float"><img src="assets/rocher.png" alt="Ferrero Rocher box"></span>
+    </div>
+    <p class="abs label" id="lbl-coffee" style="left:63px;top:628px;width:107px">For coffee dates</p>
+    <p class="abs label" id="lbl-socks" style="left:241px;top:605px;width:111px">Nike socks, on us</p>
+    <p class="abs label" id="lbl-rocher" style="left:156px;top:814px;width:107px">Craving covered</p>
+    <canvas class="fx" id="fx" aria-hidden="true"></canvas>
+  </section></div>
+
+  <!-- Screen 3 — claim -->
+  <div class="slot"><section class="phone" aria-label="Claim reward">
+    <img class="abs bg" src="assets/post-bg.jpg" alt="">
+    <svg class="abs close" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+
+    <div class="bubble" style="left:145px;top:382px;width:151px;height:141px;--dur:6.6s;--delay:-1.6s;--amp:12px;--dx:3px;--rot:1.4deg">
+      <span class="shadow"></span><span class="float"><img src="assets/coffee.png" alt="Starbucks frappuccino"></span>
+    </div>
+
+    <h1 class="abs title">Your reward is almost ready</h1>
+    <p class="abs sub">Unlocks automatically on 27th Sep, once this order’s return window ends</p>
+
+    <div class="abs warn" role="note">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ffb94c" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5"/><circle cx="12" cy="7.8" r=".6" fill="#ffb94c"/></svg>
+      <h4>Want it now?</h4>
+      <p>Claim your reward now and make this order final.<br>You won’t be able to return or exchange it.</p>
+    </div>
+
+    <label class="abs check"><input type="checkbox" id="agree"> I understand I can’t return or exchange this order after claiming.</label>
+    <button class="abs cta" id="cta" disabled>Continue</button>
+  </section></div>
+
+</main>
+<script>
+  // Scale the 440×956 screens to fit: three across when there's room, otherwise one per row.
+  function fit(){
+    const vw = document.documentElement.clientWidth, vh = window.innerHeight;
+    const pad = 32, gap = 64;
+    let s = Math.min(1, (vw - pad*2) / (440*3 + gap*2), (vh - pad*2) / 956);
+    if (s < 0.5) s = Math.min(1, (vw - pad) / 440);
+    document.documentElement.style.setProperty('--s', s.toFixed(4));
+  }
+  fit();
+  addEventListener('resize', fit);
+
+  // ─── Upgrade rail + card carousel ───────────────────
+  // Spend needed (₹) to unlock upgrades 01–07, and what the shopper has spent so far.
+  const MILESTONES = [1500, 3000, 4500, 6000, 7500, 9000, 10000];
+  const SPENT = 1000;
+  // What each upgrade unlocks (from Figma: Rewards II → reward_claude), laid out
+  // loosely in the space left of the rail: [image, alt, left, top, size]
+  const REWARDS = [
+    [['socks', 'Nike socks', 190, 436, 160], ['coffee', 'Starbucks frappuccino', 22, 548, 160], ['rocher', 'Ferrero Rocher box', 168, 690, 160]],
+    [['flowers', 'Bouquet of roses', 14, 440, 176], ['wallet', 'Green leather wallet', 180, 548, 176], ['protein', 'Supervoo protein wafer bites', 48, 684, 176]],
+    [['perfumes', 'Perfume sampler set', 94, 436, 172], ['watch', 'Analog watch', 10, 616, 170], ['sunglasses', 'Sunglasses', 186, 676, 164]],
+    [['sambas', 'Adidas Sambas', 8, 452, 206], ['steel-watch', 'Black steel watch', 146, 640, 206]],
+    [['polos', 'Polo shirts', 160, 446, 194], ['tickets', 'Match tickets', 12, 640, 194]],
+    [['dunks', 'Nike Dunks', 12, 448, 172], ['airpods', 'AirPods', 196, 500, 158], ['tom-ford', 'Tom Ford perfume', 98, 670, 166]],
+    [['ps5', 'PlayStation 5', 14, 466, 336]],
+  ];
+
+  const N = MILESTONES.length;
+  const STEP_Y = 51;            // rail distance between levels
+  const SLIDE_X = 334;          // card width minus overlap
+  const yOf = l => 810 - STEP_Y * l;   // dot centre for level l (0 = start of rail)
+  const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+  const pad = l => String(l).padStart(2, '0');
+  const rupees = n => '₹' + n.toLocaleString('en-IN');
+
+  const $ = id => document.getElementById(id);
+
+  // ─── Haptics ────────────────────────────────────────
+  // Android: Vibration API. iPhone has no Vibration API, but Safari (iOS 18+) plays a
+  // system tap whenever a switch control toggles, so a hidden one stands in there.
+  const haptic = (() => {
+    const PATTERNS = { tick: 5, light: 10, medium: 16, pop: [4, 18, 26], success: [12, 70, 20], warning: [18, 60, 18, 60, 18] };
+    const TAPS = { success: 2, warning: 3 };
+    const vibrate = typeof navigator.vibrate === 'function' && matchMedia('(pointer: coarse)').matches;
+    let sw = null, lastTick = 0;
+    if (!vibrate && matchMedia('(pointer: coarse)').matches) {
+      sw = document.createElement('label');
+      sw.setAttribute('aria-hidden', 'true');
+      sw.style.cssText = 'position:fixed;left:-100px;top:0;width:1px;height:1px;overflow:hidden;opacity:0;pointer-events:none';
+      sw.innerHTML = '<input type="checkbox" switch tabindex="-1">';
+      document.body.appendChild(sw);
+    }
+    const tap = () => {
+      const focused = document.activeElement;
+      sw.click();
+      if (focused && focused !== document.activeElement) focused.focus({ preventScroll: true });
+    };
+    return (kind = 'light') => {
+      if (kind === 'tick') {
+        const now = performance.now();
+        if (now - lastTick < 40) return;
+        lastTick = now;
+      }
+      if (vibrate) { try { navigator.vibrate(PATTERNS[kind]); } catch (_) {} return; }
+      if (!sw) return;
+      tap();
+      for (let i = 1; i < (TAPS[kind] || 1); i++) setTimeout(tap, i * 90);
+    };
+  })();
+  const carousel = $('carousel'), track = $('track'), handle = $('handle'), handleNum = $('handleNum');
+  const unlock = $('unlock'), railFill = $('railFill'), railPreview = $('railPreview');
+  const phone = carousel.closest('.phone');
+
+  const plates = MILESTONES.map((_, i) => {
+    const el = document.createElement('div');
+    el.className = 'plate';
+    el.setAttribute('role', 'group');
+    el.setAttribute('aria-roledescription', 'slide');
+    el.innerHTML = `<img src="assets/card-blank.png" alt="" draggable="false"><span>Upgrade ${pad(i + 1)}</span>`;
+    track.appendChild(el);
+    return el;
+  });
+
+  const rewards = $('rewards');
+  const rewardSets = REWARDS.map(set => set.map(([src, alt, x, y, size], j) => {
+    const el = document.createElement('div');
+    el.className = 'rb';
+    el.style.cssText = `left:${x}px;top:${y}px;width:${size}px;height:${size}px;` +
+      `--in:${60 + j * 90}ms;--depth:${(0.6 + ((j * 7 + set.length) % 5) * 0.2).toFixed(1)};` +
+      `--dur:${(5.4 + ((j * 3 + x) % 7) * 0.4).toFixed(1)}s;--delay:${-((x + y) % 50) / 10}s;` +
+      `--amp:${8 + (y % 6)}px;--dx:${j % 2 ? -3 : 3}px;--rot:${j % 2 ? -1.3 : 1.3}deg`;
+    el.innerHTML = `<span class="drift"><span class="float"><img src="assets/levels/${src}.jpg" alt="${alt}" draggable="false"></span></span>`;
+    rewards.appendChild(el);
+    return el;
+  }));
+
+  const labels = [];
+  let dots = '';
+  for (let l = 0; l <= N; l++) {
+    dots += `<i class="abs dot" style="top:${yOf(l) - 4}px"></i>`;
+    if (l) labels[l] = `<span class="abs step" style="top:${yOf(l) - 4}px">${pad(l)}</span>`;
+  }
+  $('steps').innerHTML = labels.join('') + dots;
+  const labelEls = [...$('steps').querySelectorAll('.step')];
+
+  // Shopping progress as a fractional level, e.g. ₹1,000 of ₹1,500 → 0.67
+  const progress = (() => {
+    let prev = 0;
+    for (let i = 0; i < N; i++) {
+      if (SPENT < MILESTONES[i]) return i + (SPENT - prev) / (MILESTONES[i] - prev);
+      prev = MILESTONES[i];
+    }
+    return N;
+  })();
+  const fillTop = Math.min(yOf(progress) - 7, 803);
+  railFill.style.top = fillTop + 'px';
+  railFill.style.height = (814 - fillTop) + 'px';
+
+  let pos = 1, shown = 0, anim = 0;
+
+  function render() {
+    track.style.transform = `translateX(${-(pos - 1) * SLIDE_X}px)`;
+    plates.forEach((p, i) => {
+      const d = Math.min(1, Math.abs(i + 1 - pos));
+      p.style.transform = `scale(${1 - 0.08 * d})`;
+      p.style.filter = `brightness(${1 - 0.45 * d})`;
+    });
+
+    const y = yOf(pos);
+    handle.style.transform = `translateY(${y - 21.5}px)`;
+    const previewH = Math.max(0, fillTop + 7 - y);
+    railPreview.style.top = y + 'px';
+    railPreview.style.height = previewH + 'px';
+
+    labelEls.forEach((el, i) => {
+      const base = SPENT >= MILESTONES[i] ? 0.7 : 0.3;
+      el.style.opacity = base * clamp((Math.abs(i + 1 - pos) - 0.3) / 0.4, 0, 1);
+    });
+
+    const level = Math.round(pos);
+    rewards.style.setProperty('--px', ((level - pos) * 70).toFixed(1) + 'px');
+    if (level !== shown) {
+      if (shown) haptic('tick');
+      shown = level;
+      handleNum.textContent = pad(level);
+      handle.setAttribute('aria-valuenow', level);
+      handle.setAttribute('aria-valuetext', `Upgrade ${pad(level)}`);
+      plates.forEach((p, i) => p.setAttribute('aria-hidden', i + 1 !== level));
+      rewardSets.forEach((set, i) => set.forEach(el => {
+        el.classList.toggle('on', i + 1 === level);
+        el.setAttribute('aria-hidden', i + 1 !== level);
+      }));
+      const need = MILESTONES[level - 1] - SPENT;
+      const copy = need > 0
+        ? `Shop for ${rupees(need)} more to unlock upgrade ${pad(level)}`
+        : `Upgrade ${pad(level)} unlocked`;
+      unlock.classList.add('swap');
+      clearTimeout(unlock._t);
+      unlock._t = setTimeout(() => { unlock.textContent = copy; unlock.classList.remove('swap'); }, 150);
+    }
+  }
+
+  function goTo(target) {
+    target = clamp(Math.round(target), 1, N);
+    cancelAnimationFrame(anim);
+    const from = pos, t0 = performance.now(), dur = 420;
+    const tick = now => {
+      const k = Math.min(1, (now - t0) / dur);
+      pos = from + (target - from) * (1 - Math.pow(1 - k, 3));
+      render();
+      if (k < 1) anim = requestAnimationFrame(tick);
+    };
+    anim = requestAnimationFrame(tick);
+  }
+
+  // Pointer deltas are in screen pixels; the phone is scaled to fit.
+  const scale = () => phone.getBoundingClientRect().width / 440;
+
+  function drag(el, onMove, onEnd) {
+    el.addEventListener('pointerdown', e => {
+      if (e.button !== 0) return;
+      cancelAnimationFrame(anim);
+      el.setPointerCapture(e.pointerId);
+      el.classList.add('dragging');
+      const start = { x: e.clientX, y: e.clientY, pos, t: performance.now(), s: scale() };
+      const move = ev => onMove((ev.clientX - start.x) / start.s, (ev.clientY - start.y) / start.s, start);
+      const end = ev => {
+        el.classList.remove('dragging');
+        el.removeEventListener('pointermove', move);
+        el.removeEventListener('pointerup', end);
+        el.removeEventListener('pointercancel', end);
+        onEnd((ev.clientX - start.x) / start.s, (ev.clientY - start.y) / start.s, start, performance.now() - start.t);
+      };
+      el.addEventListener('pointermove', move);
+      el.addEventListener('pointerup', end);
+      el.addEventListener('pointercancel', end);
+    });
+  }
+
+  // Rail handle: drag up for higher upgrades
+  // A firm bump when a drag runs into either end.
+  function edge(st, raw) {
+    const out = raw < 1 || raw > N;
+    if (out && !st.atEdge) haptic('medium');
+    st.atEdge = out;
+  }
+
+  handle.addEventListener('pointerdown', () => haptic('light'));
+  drag(handle,
+    (dx, dy, st) => { const raw = st.pos - dy / STEP_Y; edge(st, raw); pos = clamp(raw, 1, N); render(); },
+    () => goTo(pos));
+
+  // Cards: swipe left for higher upgrades, with a little rubber-banding at the ends
+  drag(carousel,
+    (dx, dy, st) => {
+      const raw = st.pos - dx / SLIDE_X;
+      edge(st, raw);
+      pos = raw < 1 ? 1 - (1 - raw) * 0.3 : raw > N ? N + (raw - N) * 0.3 : raw;
+      render();
+    },
+    (dx, dy, st, ms) => {
+      const flick = Math.abs(dx) > 40 || Math.abs(dx) / ms > 0.35;
+      goTo(flick && Math.abs(dx) < SLIDE_X / 2 ? st.pos + Math.sign(-dx) : pos);
+    });
+
+  // Tap anywhere on the rail to jump to that upgrade
+  $('railHit').addEventListener('click', e => {
+    const r = phone.getBoundingClientRect();
+    goTo((810 - (e.clientY - r.top) / scale()) / STEP_Y);
+  });
+
+  handle.addEventListener('keydown', e => {
+    const k = { ArrowUp: 1, ArrowRight: 1, ArrowDown: -1, ArrowLeft: -1, PageUp: 1, PageDown: -1 }[e.key];
+    if (k) {
+      const to = Math.round(pos) + k;
+      if (to < 1 || to > N) haptic('medium');
+      goTo(to);
+    }
+    else if (e.key === 'Home') goTo(1);
+    else if (e.key === 'End') goTo(N);
+    else return;
+    e.preventDefault();
+  });
+
+  render();
+
+  // ─── Bubble pop (screen 2) ──────────────────────────
+  // Tapping a bubble ruptures its film from the touch point: the rim races round
+  // both ways shedding droplets, then the last of it sprays out and the reward drops free.
+  (() => {
+    const fx = $('fx'), g = fx.getContext('2d');
+    const screen = fx.closest('.phone');
+    const bubbles = [...screen.querySelectorAll('.pick')];
+    const calm = matchMedia('(prefers-reduced-motion: reduce)');
+    const TAU = Math.PI * 2, RIM = 11, GLOW = 12;
+
+    bubbles.forEach(b => {
+      const r = parseFloat(b.style.getPropertyValue('--r'));
+      b.style.setProperty('--rin', (r - RIM) + 'px');
+      b.style.setProperty('--rout', (r + GLOW + 4) + 'px');
+    });
+
+    let drops = [], mists = [], ruptures = [], raf = 0, last = 0;
+    const rand = (a, b) => a + Math.random() * (b - a);
+
+    function sizeCanvas() {
+      const k = Math.min(3, (devicePixelRatio || 1) * scale());
+      const w = Math.round(440 * k), h = Math.round(956 * k);
+      if (fx.width !== w || fx.height !== h) { fx.width = w; fx.height = h; }
+      g.setTransform(fx.width / 440, 0, 0, fx.height / 956, 0, 0);
+    }
+
+    function drop(x, y, vx, vy, big) {
+      drops.push({
+        x, y, vx, vy, age: 0,
+        life: rand(.35, big ? .9 : .6),
+        r: big ? rand(1.2, 2.4) : rand(.5, 1.3),
+        hue: Math.random() < .35 ? rand(170, 320) : -1,
+      });
+    }
+
+    function frame(now) {
+      const dt = Math.min(.033, (now - last) / 1000 || 0);
+      last = now;
+      g.clearRect(0, 0, 440, 956);
+
+      // film still attached, with the tear widening from the touch point
+      ruptures = ruptures.filter(p => {
+        const k = Math.min(1, (now - p.t0) / p.dur);
+        const span = Math.PI * (1 - Math.pow(1 - k, 1.6));
+        const { cx, cy, r } = p;
+        if (k < 1) {
+          g.save();
+          g.beginPath();
+          g.arc(cx, cy, r + GLOW, p.a + span, p.a + TAU - span);
+          g.arc(cx, cy, r - RIM, p.a + TAU - span, p.a + span, true);
+          g.closePath();
+          g.clip();
+          g.drawImage(p.img, p.x, p.y, p.w, p.h);
+          g.restore();
+
+          // the retracting edge thickens into a bright bead and flings droplets
+          for (const dir of [1, -1]) {
+            const ang = p.a + dir * span;
+            const ex = cx + Math.cos(ang) * r, ey = cy + Math.sin(ang) * r;
+            const bead = g.createRadialGradient(ex, ey, 0, ex, ey, 5);
+            bead.addColorStop(0, 'rgba(255,255,255,.95)');
+            bead.addColorStop(1, 'rgba(255,255,255,0)');
+            g.fillStyle = bead;
+            g.fillRect(ex - 5, ey - 5, 10, 10);
+            const tx = -Math.sin(ang) * dir, ty = Math.cos(ang) * dir;
+            for (let i = 0; i < 3; i++) {
+              const sp = rand(60, 220), out = rand(40, 160);
+              drop(ex, ey, tx * sp + Math.cos(ang) * out, ty * sp + Math.sin(ang) * out, i === 0);
+            }
+          }
+        }
+        if (k < 1) return true;
+
+        // the last of the rim disintegrates outward
+        for (let i = 0; i < 46; i++) {
+          const ang = rand(0, TAU), sp = rand(70, 300);
+          drop(cx + Math.cos(ang) * r, cy + Math.sin(ang) * r,
+               Math.cos(ang) * sp, Math.sin(ang) * sp - rand(0, 60), i < 14);
+        }
+        mists.push({ cx, cy, r, age: 0, life: .45 });
+        return false;
+      });
+
+      mists = mists.filter(m => {
+        m.age += dt;
+        const k = m.age / m.life;
+        if (k >= 1) return false;
+        const rr = m.r * (1 + .45 * (1 - Math.pow(1 - k, 3)));
+        const ring = g.createRadialGradient(m.cx, m.cy, rr * .82, m.cx, m.cy, rr);
+        ring.addColorStop(0, 'rgba(255,255,255,0)');
+        ring.addColorStop(.7, `rgba(220,235,255,${.22 * (1 - k)})`);
+        ring.addColorStop(1, 'rgba(255,255,255,0)');
+        g.fillStyle = ring;
+        g.beginPath(); g.arc(m.cx, m.cy, rr, 0, TAU); g.fill();
+        return true;
+      });
+
+      g.lineCap = 'round';
+      drops = drops.filter(d => {
+        d.age += dt;
+        if (d.age >= d.life) return false;
+        d.vx *= 1 - 2.2 * dt;
+        d.vy = d.vy * (1 - 2.2 * dt) + 520 * dt;
+        d.x += d.vx * dt;
+        d.y += d.vy * dt;
+        const a = Math.pow(1 - d.age / d.life, 1.4);
+        g.strokeStyle = d.hue < 0 ? `rgba(255,255,255,${a})` : `hsla(${d.hue},90%,82%,${a})`;
+        g.lineWidth = d.r * 2;
+        g.beginPath();
+        g.moveTo(d.x - d.vx * .014, d.y - d.vy * .014);
+        g.lineTo(d.x, d.y);
+        g.stroke();
+        return true;
+      });
+
+      if (ruptures.length || mists.length || drops.length) raf = requestAnimationFrame(frame);
+      else raf = 0;
+    }
+
+    let audio;
+    function popSound() {
+      try {
+        audio = audio || new (window.AudioContext || window.webkitAudioContext)();
+        const t = audio.currentTime;
+        const len = Math.floor(audio.sampleRate * .06);
+        const buf = audio.createBuffer(1, len, audio.sampleRate);
+        const ch = buf.getChannelData(0);
+        for (let i = 0; i < len; i++) ch[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 4);
+        const noise = audio.createBufferSource();
+        noise.buffer = buf;
+        const bp = audio.createBiquadFilter();
+        bp.type = 'bandpass'; bp.Q.value = 1.2;
+        bp.frequency.setValueAtTime(2600, t);
+        bp.frequency.exponentialRampToValueAtTime(900, t + .05);
+        const ng = audio.createGain();
+        ng.gain.value = .5;
+        noise.connect(bp).connect(ng).connect(audio.destination);
+
+        const osc = audio.createOscillator();
+        osc.frequency.setValueAtTime(520, t);
+        osc.frequency.exponentialRampToValueAtTime(140, t + .07);
+        const og = audio.createGain();
+        og.gain.setValueAtTime(.35, t);
+        og.gain.exponentialRampToValueAtTime(.001, t + .08);
+        osc.connect(og).connect(audio.destination);
+
+        noise.start(t);
+        osc.start(t); osc.stop(t + .09);
+      } catch (_) { /* sound is a nicety */ }
+    }
+
+    function label(b) { return document.getElementById(b.getAttribute('aria-describedby')); }
+
+    function reform(b) {
+      b.classList.remove('popped');
+      b.classList.add('reform');
+      b.setAttribute('aria-pressed', 'false');
+      label(b).classList.remove('on');
+      haptic('light');
+      setTimeout(() => b.classList.remove('reform'), 700);
+    }
+
+    function pop(b, clientX, clientY) {
+      const img = b.querySelector('img');
+      const s = scale();
+      const pr = screen.getBoundingClientRect();
+      const fr = b.querySelector('.float').getBoundingClientRect();
+      const w = b.offsetWidth, h = b.offsetHeight;
+      const x = (fr.left + fr.width / 2 - pr.left) / s - w / 2;
+      const y = (fr.top + fr.height / 2 - pr.top) / s - h / 2;
+      const cx = x + parseFloat(b.style.getPropertyValue('--mx'));
+      const cy = y + parseFloat(b.style.getPropertyValue('--my'));
+      const r = parseFloat(b.style.getPropertyValue('--r'));
+      const a = clientX == null
+        ? -Math.PI / 2 + rand(-.6, .6)
+        : Math.atan2((clientY - pr.top) / s - cy, (clientX - pr.left) / s - cx);
+
+      b.classList.remove('reform', 'press');
+      b.classList.add('popped');
+      b.setAttribute('aria-pressed', 'true');
+      label(b).classList.add('on');
+      screen.classList.add('has-pick');
+      popSound();
+      haptic('pop');
+      if (calm.matches) return;
+
+      sizeCanvas();
+      ruptures.push({ img, x, y, w, h, cx, cy, r, a, t0: performance.now(), dur: 110 });
+      // a flash where the film first tears
+      mists.push({ cx: cx + Math.cos(a) * r, cy: cy + Math.sin(a) * r, r: 6, age: 0, life: .18 });
+      if (!raf) { last = performance.now(); raf = requestAnimationFrame(frame); }
+    }
+
+    function choose(b, x, y) {
+      if (b.classList.contains('popped')) {
+        // tapping the freed reward again puts it back in its bubble
+        reform(b);
+        screen.classList.remove('has-pick');
+        return;
+      }
+      bubbles.forEach(o => o !== b && o.classList.contains('popped') && reform(o));
+      pop(b, x, y);
+    }
+
+    bubbles.forEach(b => {
+      b.addEventListener('pointerdown', e => {
+        if (e.button !== 0 || b.classList.contains('popped')) return;
+        b.classList.add('press');
+        haptic('tick');
+      });
+      ['pointerleave', 'pointercancel'].forEach(t => b.addEventListener(t, () => b.classList.remove('press')));
+      b.addEventListener('click', e => choose(b, e.detail ? e.clientX : null, e.detail ? e.clientY : null));
+      b.addEventListener('keydown', e => {
+        if (e.key !== 'Enter' && e.key !== ' ') return;
+        e.preventDefault();
+        choose(b);
+      });
+    });
+  })();
+
+  // ─── Claim (screen 3) ───────────────────────────────
+  const agree = $('agree'), cta = $('cta'), check = agree.closest('.check');
+  agree.addEventListener('change', () => {
+    cta.disabled = !agree.checked;
+    haptic(agree.checked ? 'medium' : 'light');
+  });
+  cta.addEventListener('click', () => haptic('success'));
+  // A disabled button swallows taps, so catch them on the screen and point at the checkbox.
+  cta.closest('.phone').addEventListener('click', e => {
+    if (!cta.disabled) return;
+    const r = cta.getBoundingClientRect();
+    if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) return;
+    haptic('warning');
+    check.classList.remove('nudge');
+    void check.offsetWidth;
+    check.classList.add('nudge');
+  });
+  document.querySelector('.back').addEventListener('click', () => haptic('light'));
+</script>
+</body>
+</html>
